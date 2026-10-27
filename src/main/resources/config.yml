@@ -1,10 +1,15 @@
 # PUMPEvents configuration
 meteor:
-  # Falling magma blocks are visual only and do not break terrain.
+  # Number of falling magma-block visuals (clamped between 1 and 12).
   falling-block-count: 5
 pumpkin:
   # If false, pumpkincreate will not replace non-air blocks.
   replace-blocks: false
+pumpkin-hunt:
+  # Event duration is clamped between 30 and 600 seconds.
+  duration-seconds: 120
+  # Emeralds awarded for each collected hunt pumpkin (clamped between 0 and 64).
+  emeralds-per-pumpkin: 2
 midnight:
   duration-seconds: 20
   spawn-mobs: true
