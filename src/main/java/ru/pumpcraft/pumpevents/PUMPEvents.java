@@ -278,8 +278,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) pumpkinScores.put(player.getUniqueId(), 0);
         pumpkinHuntSecondsLeft = Math.max(30, Math.min(600, getConfig().getInt("pumpkin-hunt.duration-seconds", 120)));
         Bukkit.broadcastMessage(color("&6&l☠ PUMPKIN HUNT! &eFind the glowing pumpkins! You have "
-                + pumpkinHuntSecondsLeft + " seconds. Each pumpkin gives "
-                + getConfig().getInt("pumpkin-hunt.emeralds-per-pumpkin", 2) + " emeralds."));
+                + pumpkinHuntSecondsLeft + " seconds. Collect pumpkins for random loot!"));
         for (Player player : Bukkit.getOnlinePlayers()) spawnHuntPumpkins(player, 3);
         pumpkinHuntTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
             if (pumpkinHuntSecondsLeft <= 0) {
