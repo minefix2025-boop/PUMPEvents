@@ -1,0 +1,27 @@
+name: PUMPEvents
+version: 1.0.0
+main: ru.pumpcraft.pumpevents.PUMPEvents
+api-version: '1.21'
+author: PUMPCraft
+description: World events for the PUMPCraft Minecraft server
+commands:
+  meteor:
+    description: Start a meteor event at coordinates or at your position
+    usage: /meteor <x> <y> <z> | /meteor @s
+    permission: pumpevents.admin
+  pumpkincreate:
+    description: Create an event pumpkin at your position
+    usage: /pumpkincreate @s
+    permission: pumpevents.admin
+  midnightpump:
+    description: Start the Midnight Pumpkin event
+    usage: /midnightpump
+    permission: pumpevents.admin
+  boss:
+    description: Spawn the PUMP world boss
+    usage: /boss [@s]
+    permission: pumpevents.admin
+permissions:
+  pumpevents.admin:
+    description: Allows starting PUMPEvents world events
+    default: op
