@@ -20,6 +20,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -30,6 +32,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -37,6 +41,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class PUMPEvents extends JavaPlugin implements Listener {
     private NamespacedKey huntKey;
     private final Map<UUID, Integer> pumpkinScores = new HashMap<>();
+    private final Set<String> meteorBlocks = new HashSet<>();
+    private final Set<String> rewardPumpkins = new HashSet<>();
     private BukkitTask pumpkinHuntTask;
     private int pumpkinHuntSecondsLeft;
 
@@ -61,7 +67,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
             case "pumpevents" -> {
                 sender.sendMessage(color("&6&lPUMPCraft &8» &ePUMPEvents commands:"));
                 sender.sendMessage(color("&6/meteor <x> <y> <z> &7or &6/meteor @s"));
-                sender.sendMessage(color("&6/pumpkincreate @s &7- create a decorative pumpkin"));
+                sender.sendMessage(color("&6/pumpkincreate @s &7- create a reward pumpkin"));
                 sender.sendMessage(color("&6/pumpkinhunt start|stop &7- collectible pumpkin event"));
                 sender.sendMessage(color("&6/midnightpump &7- midnight event"));
                 sender.sendMessage(color("&6/boss [@s|x y z] &7- summon the world boss"));
@@ -179,6 +185,66 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
         // Visual-only event: no explosion is created.
     }
 
+
+    @EventHandler
+    public void onMeteorLand(EntityChangeBlockEvent event) {
+        if (!(event.getEntity() instanceof FallingBlock falling)
+                || falling.getBlockData().getMaterial() != Material.MAGMA_BLOCK
+                || event.getTo() != Material.MAGMA_BLOCK) return;
+        Location landed = event.getBlock().getLocation();
+        Bukkit.getScheduler().runTask(this, () -> {
+            if (landed.getBlock().getType() == Material.MAGMA_BLOCK) {
+                meteorBlocks.add(locationKey(landed));
+                landed.getWorld().spawnParticle(Particle.FLAME, landed.clone().add(0.5, 1, 0.5), 18, 0.3, 0.3, 0.3, 0.02);
+            }
+        });
+    }
+
+    @EventHandler
+    public void onRewardBlockBreak(BlockBreakEvent event) {
+        Location location = event.getBlock().getLocation();
+        String key = locationKey(location);
+        Player player = event.getPlayer();
+        if (meteorBlocks.remove(key)) {
+            event.setDropItems(false);
+            rewardRandom(player, "meteor.rewards", java.util.List.of(
+                    "DIAMOND", "EMERALD", "GOLD_INGOT", "IRON_INGOT", "EXPERIENCE_BOTTLE", "GOLDEN_APPLE"),
+                    "&6Meteor loot");
+            player.getWorld().spawnParticle(Particle.LAVA, location.clone().add(0.5, 0.5, 0.5), 25, 0.3, 0.3, 0.3, 0.02);
+            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.2f);
+            return;
+        }
+        if (rewardPumpkins.remove(key)) {
+            event.setDropItems(false);
+            rewardRandom(player, "pumpkin.rewards", java.util.List.of(
+                    "EMERALD", "GOLD_INGOT", "IRON_INGOT", "GOLDEN_CARROT", "GOLDEN_APPLE", "DIAMOND"),
+                    "&6Pumpkin loot");
+            player.getWorld().spawnParticle(Particle.SOUL, location.clone().add(0.5, 0.5, 0.5), 20, 0.3, 0.4, 0.3, 0.02);
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.4f);
+        }
+    }
+
+    private String locationKey(Location location) {
+        return location.getWorld().getUID() + ":" + location.getBlockX() + ":"
+                + location.getBlockY() + ":" + location.getBlockZ();
+    }
+
+    private void rewardRandom(Player player, String configPath, java.util.List<String> defaults, String label) {
+        java.util.List<String> pool = getConfig().getStringList(configPath);
+        if (pool.isEmpty()) pool = defaults;
+        String chosen = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        Material material = Material.matchMaterial(chosen);
+        if (material == null || !material.isItem()) material = Material.EMERALD;
+        int amount = ThreadLocalRandom.current().nextInt(1, 4);
+        if (material == Material.DIAMOND || material == Material.GOLDEN_APPLE
+                || material == Material.NETHERITE_SCRAP || material == Material.ENCHANTED_GOLDEN_APPLE
+                || material == Material.TOTEM_OF_UNDYING) amount = 1;
+        ItemStack reward = new ItemStack(material, amount);
+        java.util.Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
+        leftovers.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+        player.sendMessage(color(label + " &8» &eYou received &a" + amount + "x " + material.name().replace('_', ' ')));
+    }
+
     private void createPumpkin(Location location) {
         World world = location.getWorld();
         if (world == null) return;
@@ -188,6 +254,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
         if (existing.isAir() || existing == Material.SHORT_GRASS || existing == Material.TALL_GRASS
                 || existing == Material.FERN || replace) {
             blockLocation.getBlock().setType(Material.CARVED_PUMPKIN, false);
+            rewardPumpkins.add(locationKey(blockLocation));
             world.spawnParticle(Particle.SOUL, blockLocation.clone().add(0.5, 1.0, 0.5), 35, 0.5, 0.7, 0.5, 0.03);
             world.playSound(blockLocation, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.7f);
             Bukkit.broadcastMessage(color("&6☠ &eA mysterious pumpkin appeared in &f"
@@ -296,13 +363,18 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
         event.setCancelled(true);
         event.getItem().remove();
         int reward = Math.max(0, Math.min(64, getConfig().getInt("pumpkin-hunt.emeralds-per-pumpkin", 2)));
-        if (reward > 0) player.getInventory().addItem(new ItemStack(Material.EMERALD, reward))
-                .values().forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+        if (getConfig().getBoolean("pumpkin-hunt.random-rewards", true)) {
+            rewardRandom(player, "pumpkin-hunt.rewards", java.util.List.of(
+                    "EMERALD", "EMERALD", "GOLD_INGOT", "IRON_INGOT", "GOLDEN_CARROT", "DIAMOND", "EXPERIENCE_BOTTLE"),
+                    "&6Hunt reward");
+        } else if (reward > 0) {
+            player.getInventory().addItem(new ItemStack(Material.EMERALD, reward))
+                    .values().forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+        }
         pumpkinScores.merge(player.getUniqueId(), 1, Integer::sum);
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.5f);
         player.spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1, 0), 12, 0.4, 0.5, 0.4, 0.02);
-        player.sendMessage(color("&6+1 Hunt Pumpkin &8| &a+" + reward + " emeralds &8| &eTotal: "
-                + pumpkinScores.get(player.getUniqueId())));
+        player.sendMessage(color("&6+1 Hunt Pumpkin &8| &eTotal: " + pumpkinScores.get(player.getUniqueId())));
     }
 
     private void startMidnight() {
@@ -368,6 +440,12 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
                 "&aThe PUMP World Boss has been defeated!")));
         event.getDrops().add(new ItemStack(Material.GOLD_INGOT, 16));
         event.getDrops().add(new ItemStack(Material.DIAMOND, 3));
+        Player killer = ravager.getKiller();
+        if (killer != null) {
+            rewardRandom(killer, "boss.rewards", java.util.List.of(
+                    "DIAMOND", "DIAMOND", "EMERALD", "GOLDEN_APPLE", "NETHERITE_SCRAP", "TOTEM_OF_UNDYING"),
+                    "&4Boss reward");
+        }
     }
 
     private String color(String text) {
