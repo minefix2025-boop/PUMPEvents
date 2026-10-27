@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -12,34 +13,61 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Ravager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class PUMPEvents extends JavaPlugin implements Listener {
+    private NamespacedKey huntKey;
+    private final Map<UUID, Integer> pumpkinScores = new HashMap<>();
+    private BukkitTask pumpkinHuntTask;
+    private int pumpkinHuntSecondsLeft;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        huntKey = new NamespacedKey(this, "hunt_pumpkin");
         Bukkit.getPluginManager().registerEvents(this, this);
         getLogger().info("PUMPEvents enabled!");
     }
 
     @Override
     public void onDisable() {
+        if (pumpkinHuntTask != null) pumpkinHuntTask.cancel();
+        pumpkinScores.clear();
         getLogger().info("PUMPEvents disabled.");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         switch (command.getName().toLowerCase()) {
+            case "pumpevents" -> {
+                sender.sendMessage(color("&6&lPUMPCraft &8» &ePUMPEvents commands:"));
+                sender.sendMessage(color("&6/meteor <x> <y> <z> &7or &6/meteor @s"));
+                sender.sendMessage(color("&6/pumpkincreate @s &7- create a decorative pumpkin"));
+                sender.sendMessage(color("&6/pumpkinhunt start|stop &7- collectible pumpkin event"));
+                sender.sendMessage(color("&6/midnightpump &7- midnight event"));
+                sender.sendMessage(color("&6/boss [@s|x y z] &7- summon the world boss"));
+                sender.sendMessage(color("&7Pumpkin hunt: " + (pumpkinHuntTask == null ? "&cOFF" : "&aON (" + pumpkinHuntSecondsLeft + "s)")));
+                return true;
+            }
             case "meteor" -> {
                 Location target = parseTarget(sender, args);
                 if (target == null) {
@@ -61,7 +89,22 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
                     return true;
                 }
                 createPumpkin(player.getLocation());
-                sender.sendMessage(color("&6☠ &eEvent pumpkin created!"));
+                sender.sendMessage(color("&6☠ &ePumpkin event triggered!"));
+                return true;
+            }
+            case "pumpkinhunt" -> {
+                if (args.length != 1) {
+                    sender.sendMessage(color("&cUsage: /pumpkinhunt start|stop"));
+                    return true;
+                }
+                if (args[0].equalsIgnoreCase("start")) {
+                    startPumpkinHunt(sender);
+                } else if (args[0].equalsIgnoreCase("stop")) {
+                    stopPumpkinHunt("&cThe Pumpkin Hunt was stopped by an admin.");
+                    sender.sendMessage(color("&7Pumpkin Hunt stopped."));
+                } else {
+                    sender.sendMessage(color("&cUsage: /pumpkinhunt start|stop"));
+                }
                 return true;
             }
             case "midnightpump" -> {
@@ -96,7 +139,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
     private Location parseTarget(CommandSender sender, String[] args) {
         if (args.length == 1 && args[0].equalsIgnoreCase("@s")) {
             if (sender instanceof Player player) return player.getLocation().clone();
-            sender.sendMessage(color("&c@ s works only for a player. From console specify coordinates."));
+            sender.sendMessage(color("&c@s works only for a player. From console specify coordinates."));
             return null;
         }
         if (args.length != 3) return null;
@@ -104,8 +147,10 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
             double x = Double.parseDouble(args[0]);
             double y = Double.parseDouble(args[1]);
             double z = Double.parseDouble(args[2]);
-            World world = sender instanceof Player player ? player.getWorld() : Bukkit.getWorlds().get(0);
-            if (world == null || y < world.getMinHeight() || y >= world.getMaxHeight()) return null;
+            World world = sender instanceof Player player ? player.getWorld()
+                    : (Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0));
+            if (world == null || !Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)
+                    || y < world.getMinHeight() || y >= world.getMaxHeight()) return null;
             return new Location(world, x, y, z);
         } catch (NumberFormatException exception) {
             return null;
@@ -131,7 +176,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
             block.setVelocity(new Vector(dx * 0.04, -0.45, dz * 0.04));
         }
         world.spawnParticle(Particle.EXPLOSION, target.clone().add(0, 1, 0), 2, 0.5, 0.5, 0.5, 0);
-        // No terrain-damaging explosion is created.
+        // Visual-only event: no explosion is created.
     }
 
     private void createPumpkin(Location location) {
@@ -149,8 +194,115 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
                     + world.getName() + "&e!"));
         } else {
             world.spawnParticle(Particle.SOUL, location.clone().add(0, 1, 0), 25, 0.5, 0.7, 0.5, 0.03);
-            Bukkit.broadcastMessage(color("&6☠ &eA mysterious pumpkin event was triggered!"));
+            Bukkit.broadcastMessage(color("&6☠ &eA mysterious pumpkin event was triggered! The block was left untouched."));
         }
+    }
+
+    private void startPumpkinHunt(CommandSender sender) {
+        if (pumpkinHuntTask != null) {
+            sender.sendMessage(color("&cPumpkin Hunt is already running."));
+            return;
+        }
+        if (Bukkit.getOnlinePlayers().isEmpty()) {
+            sender.sendMessage(color("&cAt least one player must be online to start the hunt."));
+            return;
+        }
+        pumpkinScores.clear();
+        for (Player player : Bukkit.getOnlinePlayers()) pumpkinScores.put(player.getUniqueId(), 0);
+        pumpkinHuntSecondsLeft = Math.max(30, Math.min(600, getConfig().getInt("pumpkin-hunt.duration-seconds", 120)));
+        Bukkit.broadcastMessage(color("&6&l☠ PUMPKIN HUNT! &eFind the glowing pumpkins! You have "
+                + pumpkinHuntSecondsLeft + " seconds. Each pumpkin gives "
+                + getConfig().getInt("pumpkin-hunt.emeralds-per-pumpkin", 2) + " emeralds."));
+        for (Player player : Bukkit.getOnlinePlayers()) spawnHuntPumpkins(player, 3);
+        pumpkinHuntTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
+            if (pumpkinHuntSecondsLeft <= 0) {
+                stopPumpkinHunt("&6Pumpkin Hunt has ended!");
+                return;
+            }
+            if (pumpkinHuntSecondsLeft % 20 == 0) {
+                for (Player player : Bukkit.getOnlinePlayers()) spawnHuntPumpkins(player, 1);
+            }
+            if (pumpkinHuntSecondsLeft == 60 || pumpkinHuntSecondsLeft == 30 || pumpkinHuntSecondsLeft == 10) {
+                Bukkit.broadcastMessage(color("&ePumpkin Hunt ends in &6" + pumpkinHuntSecondsLeft + " seconds&e!"));
+            }
+            pumpkinHuntSecondsLeft--;
+        }, 20L, 20L);
+    }
+
+    private void spawnHuntPumpkins(Player player, int amount) {
+        if (!player.isOnline()) return;
+        World world = player.getWorld();
+        for (int i = 0; i < amount; i++) {
+            int dx = ThreadLocalRandom.current().nextInt(-12, 13);
+            int dz = ThreadLocalRandom.current().nextInt(-12, 13);
+            int x = player.getLocation().getBlockX() + dx;
+            int z = player.getLocation().getBlockZ() + dz;
+            int y = world.getHighestBlockYAt(x, z) + 1;
+            if (y >= world.getMaxHeight() || y < world.getMinHeight()) continue;
+            Location at = new Location(world, x + 0.5, y, z + 0.5);
+            if (!at.getBlock().isPassable() || !at.clone().add(0, 1, 0).getBlock().isPassable()) continue;
+            ItemStack itemStack = new ItemStack(Material.CARVED_PUMPKIN);
+            ItemMeta meta = itemStack.getItemMeta();
+            if (meta == null) continue;
+            meta.setDisplayName(color("&6&lHUNT PUMPKIN"));
+            meta.setLore(java.util.List.of(color("&7A collectible pumpkin for the PUMPCraft event"), color("&ePick it up for emeralds!")));
+            meta.getPersistentDataContainer().set(huntKey, PersistentDataType.BYTE, (byte) 1);
+            itemStack.setItemMeta(meta);
+            Item item = world.dropItem(at, itemStack);
+            item.setGlowing(true);
+            item.setUnlimitedLifetime(true);
+            item.setVelocity(new Vector(0, 0, 0));
+        }
+    }
+
+    private void stopPumpkinHunt(String message) {
+        if (pumpkinHuntTask == null) return;
+        pumpkinHuntTask.cancel();
+        pumpkinHuntTask = null;
+        Bukkit.broadcastMessage(color(message));
+        pumpkinScores.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                .limit(3)
+                .forEach(entry -> {
+                    Player player = Bukkit.getPlayer(entry.getKey());
+                    String name = player == null ? Bukkit.getOfflinePlayer(entry.getKey()).getName() : player.getName();
+                    if (name != null && entry.getValue() > 0) {
+                        Bukkit.broadcastMessage(color("&e#" + (1 + pumpkinScores.entrySet().stream()
+                                .filter(other -> other.getValue() > entry.getValue()).count())
+                                + " &6" + name + " &7collected &a" + entry.getValue() + " &7pumpkins!"));
+                    }
+                });
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                if (entity instanceof Item item && isHuntPumpkin(item)) item.remove();
+            }
+        }
+        pumpkinScores.clear();
+    }
+
+    private boolean isHuntPumpkin(Item item) {
+        ItemMeta meta = item.getItemStack().getItemMeta();
+        return meta != null && meta.getPersistentDataContainer().has(huntKey, PersistentDataType.BYTE);
+    }
+
+    @EventHandler
+    public void onHuntPumpkinPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !isHuntPumpkin(event.getItem())) return;
+        if (pumpkinHuntTask == null) {
+            event.setCancelled(true);
+            event.getItem().remove();
+            return;
+        }
+        event.setCancelled(true);
+        event.getItem().remove();
+        int reward = Math.max(0, Math.min(64, getConfig().getInt("pumpkin-hunt.emeralds-per-pumpkin", 2)));
+        if (reward > 0) player.getInventory().addItem(new ItemStack(Material.EMERALD, reward))
+                .values().forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+        pumpkinScores.merge(player.getUniqueId(), 1, Integer::sum);
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.5f);
+        player.spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1, 0), 12, 0.4, 0.5, 0.4, 0.02);
+        player.sendMessage(color("&6+1 Hunt Pumpkin &8| &a+" + reward + " emeralds &8| &eTotal: "
+                + pumpkinScores.get(player.getUniqueId())));
     }
 
     private void startMidnight() {
@@ -185,7 +337,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
             entity.setCustomNameVisible(true);
             entity.setPersistent(true);
             entity.setRemoveWhenFarAway(false);
-            double health = Math.max(40.0, getConfig().getDouble("boss.max-health", 300.0));
+            double health = Math.max(40.0, Math.min(2048.0, getConfig().getDouble("boss.max-health", 300.0)));
             if (entity.getAttribute(Attribute.MAX_HEALTH) != null) {
                 entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(health);
                 entity.setHealth(health);
@@ -214,8 +366,8 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
                 || !ChatColor.stripColor(ravager.getCustomName()).equals("PUMP WORLD BOSS")) return;
         Bukkit.broadcastMessage(color(getConfig().getString("boss.reward-message",
                 "&aThe PUMP World Boss has been defeated!")));
-        event.getDrops().add(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT, 16));
-        event.getDrops().add(new org.bukkit.inventory.ItemStack(Material.DIAMOND, 3));
+        event.getDrops().add(new ItemStack(Material.GOLD_INGOT, 16));
+        event.getDrops().add(new ItemStack(Material.DIAMOND, 3));
     }
 
     private String color(String text) {
