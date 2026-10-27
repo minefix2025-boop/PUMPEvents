@@ -1,0 +1,16 @@
+# PUMPEvents configuration
+meteor:
+  # Falling magma blocks are visual only and do not break terrain.
+  falling-block-count: 5
+pumpkin:
+  # If false, pumpkincreate will not replace non-air blocks.
+  replace-blocks: false
+midnight:
+  duration-seconds: 20
+  spawn-mobs: true
+boss:
+  name: "&6&lPUMP WORLD BOSS"
+  max-health: 300.0
+  damage: 18.0
+  movement-speed: 0.32
+  reward-message: "&aThe PUMP World Boss has been defeated!"
