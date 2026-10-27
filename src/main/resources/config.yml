@@ -1,15 +1,45 @@
-# PUMPEvents configuration
+# PUMPEvents 1.2.0 configuration
 meteor:
-  # Number of falling magma-block visuals (clamped between 1 and 12).
+  # Number of falling magma blocks (clamped between 1 and 12).
   falling-block-count: 5
+  # Random reward pool for breaking a landed meteor block. Repeated entries are more common.
+  rewards:
+    - DIAMOND
+    - EMERALD
+    - EMERALD
+    - GOLD_INGOT
+    - GOLD_INGOT
+    - IRON_INGOT
+    - EXPERIENCE_BOTTLE
+    - GOLDEN_APPLE
 pumpkin:
   # If false, pumpkincreate will not replace non-air blocks.
   replace-blocks: false
+  # Random loot pool for breaking a pumpkin created by /pumpkincreate.
+  rewards:
+    - EMERALD
+    - EMERALD
+    - GOLD_INGOT
+    - IRON_INGOT
+    - GOLDEN_CARROT
+    - GOLDEN_APPLE
+    - DIAMOND
 pumpkin-hunt:
   # Event duration is clamped between 30 and 600 seconds.
   duration-seconds: 120
-  # Emeralds awarded for each collected hunt pumpkin (clamped between 0 and 64).
+  # Used only if random-rewards is false.
   emeralds-per-pumpkin: 2
+  random-rewards: true
+  # Random loot pool for each collected hunt pumpkin. Repeated entries are more common.
+  rewards:
+    - EMERALD
+    - EMERALD
+    - EMERALD
+    - GOLD_INGOT
+    - IRON_INGOT
+    - GOLDEN_CARROT
+    - EXPERIENCE_BOTTLE
+    - DIAMOND
 midnight:
   duration-seconds: 20
   spawn-mobs: true
@@ -19,3 +49,11 @@ boss:
   damage: 18.0
   movement-speed: 0.32
   reward-message: "&aThe PUMP World Boss has been defeated!"
+  # Killer receives one random bonus reward, in addition to gold and diamonds.
+  rewards:
+    - DIAMOND
+    - DIAMOND
+    - EMERALD
+    - GOLDEN_APPLE
+    - NETHERITE_SCRAP
+    - TOTEM_OF_UNDYING
