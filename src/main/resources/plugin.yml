@@ -1,10 +1,14 @@
 name: PUMPEvents
-version: 1.0.0
+version: 1.1.0
 main: ru.pumpcraft.pumpevents.PUMPEvents
 api-version: '1.21'
 author: PUMPCraft
-description: World events for the PUMPCraft Minecraft server
+description: World events and collectible hunts for the PUMPCraft server
 commands:
+  pumpevents:
+    description: Show PUMPEvents help and current event status
+    usage: /pumpevents
+    permission: pumpevents.admin
   meteor:
     description: Start a meteor event at coordinates or at your position
     usage: /meteor <x> <y> <z> | /meteor @s
@@ -13,13 +17,17 @@ commands:
     description: Create an event pumpkin at your position
     usage: /pumpkincreate @s
     permission: pumpevents.admin
+  pumpkinhunt:
+    description: Start or stop the collectible Pumpkin Hunt
+    usage: /pumpkinhunt <start|stop>
+    permission: pumpevents.admin
   midnightpump:
     description: Start the Midnight Pumpkin event
     usage: /midnightpump
     permission: pumpevents.admin
   boss:
     description: Spawn the PUMP world boss
-    usage: /boss [@s]
+    usage: /boss [@s|x y z]
     permission: pumpevents.admin
 permissions:
   pumpevents.admin:
