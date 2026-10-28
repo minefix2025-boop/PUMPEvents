@@ -1,5 +1,5 @@
 name: PUMPEvents
-version: 1.2.0
+version: 1.3.0
 main: ru.pumpcraft.pumpevents.PUMPEvents
 api-version: '1.21'
 author: PUMPCraft
@@ -28,6 +28,30 @@ commands:
   boss:
     description: Spawn the PUMP world boss
     usage: /boss [@s|x y z]
+    permission: pumpevents.admin
+  bloodmoon:
+    description: Start the Blood Moon monster event
+    usage: /bloodmoon
+    permission: pumpevents.admin
+  pumpquake:
+    description: Start the PUMP Quake event
+    usage: /pumpquake
+    permission: pumpevents.admin
+  lightningstorm:
+    description: Start a visual lightning storm
+    usage: /lightningstorm
+    permission: pumpevents.admin
+  supplydrop:
+    description: Spawn a randomized supply chest
+    usage: /supplydrop [@s|x y z]
+    permission: pumpevents.admin
+  pumprain:
+    description: Spawn collectible reward pumpkins
+    usage: /pumprain
+    permission: pumpevents.admin
+  mobraid:
+    description: Spawn a hostile mob wave
+    usage: /mobraid [@s|x y z]
     permission: pumpevents.admin
 permissions:
   pumpevents.admin:
