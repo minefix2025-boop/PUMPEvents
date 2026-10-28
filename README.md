@@ -1,38 +1,37 @@
 # PUMPEvents
 
-A lightweight event plugin for **PUMPCraft**, targeting Paper/Purpur 1.21.6 and Java 21.
+An event plugin for **PUMPCraft**, targeting Paper/Purpur 1.21.6 and Java 21.
 
 ## Build
 
-Install JDK 21 and Maven, then run:
-
-```bash
-mvn --batch-mode clean package
-```
-
-The plugin JAR is created at `target/PUMPEvents-1.2.0.jar`. Put it in the server's `plugins` folder and restart the server.
+Run `mvn --batch-mode clean package`. The plugin JAR is `target/PUMPEvents-1.3.0.jar`.
 
 ## Commands
 
 All commands require `pumpevents.admin` (operators receive it by default).
 
-- `/pumpevents` — show command help and Pumpkin Hunt status.
-- `/meteor <x> <y> <z>` or `/meteor @s` — starts a meteor event. When its magma blocks land, break them to receive random loot.
-- `/pumpkincreate @s` — creates a special pumpkin; break it for random loot.
-- `/pumpkinhunt start` — starts a timed collectible event. Glowing pumpkins spawn near online players and award random loot.
-- `/pumpkinhunt stop` — ends the hunt, announces top collectors, and removes remaining event pumpkins.
-- `/midnightpump` — sets loaded worlds to midnight, adds a short darkness effect, and optionally spawns a nearby zombie for each online player.
-- `/boss`, `/boss @s`, or `/boss <x> <y> <z>` — spawns the PUMP World Boss. Defeating it drops 16 gold ingots, 3 diamonds, and gives its killer one random bonus reward.
+- `/pumpevents` — show commands and Pumpkin Hunt status.
+- `/meteor <x> <y> <z>` or `/meteor @s` — launch falling magma blocks; break landed event blocks for random loot.
+- `/pumpkincreate @s` — create a special pumpkin; break it for random loot.
+- `/pumpkinhunt start|stop` — timed collectible hunt with random rewards and leaderboard.
+- `/midnightpump` — midnight atmosphere, darkness, and optional nearby zombies.
+- `/boss [@s|x y z]` — summon the PUMP World Boss; defeat it for gold, diamonds, and a bonus reward.
+- `/bloodmoon` — set night, start rain, add red particles and spawn a hostile wave around online players.
+- `/pumpquake` — quake sound/particles, a small knockback effect, and a chance at random loot for each online player.
+- `/lightningstorm` — visual-only lightning around online players; it does not damage players or start fires.
+- `/supplydrop [@s|x y z]` — create a chest with randomized supplies. Coordinates use your current world; console uses the first loaded world.
+- `/pumprain` — drop six glowing collectible pumpkins near each online player; picking one up grants random loot.
+- `/mobraid [@s|x y z]` — spawn a wave of zombies and skeletons at the target.
 
-## Reward settings
+## Loot configuration
 
-Edit `plugins/PUMPEvents/config.yml` and restart the server after changes.
+Edit `plugins/PUMPEvents/config.yml`, then restart the server.
 
-- `meteor.rewards`: loot pool for landed meteor blocks.
-- `pumpkin.rewards`: loot pool for `/pumpkincreate` pumpkins.
-- `pumpkin-hunt.rewards`: loot pool for collected hunt pumpkins.
-- `pumpkin-hunt.random-rewards`: enable random loot; set false to award the configured emerald amount instead.
-- `boss.rewards`: random bonus loot for the player who dealt the final blow.
-- Repeating a material in a list increases its chance. Regular rewards give 1–3 items; rare/high-value items such as diamonds, golden apples, netherite scrap and totems give one.
+- `meteor.rewards` — loot from landed meteor blocks.
+- `pumpkin.rewards` — loot from special `/pumpkincreate` pumpkins.
+- `pumpkin-hunt.rewards` — Pumpkin Hunt loot.
+- `pumpkin-rain.rewards` — Pumpkin Rain loot.
+- `quake.rewards` — possible PUMP Quake loot.
+- `boss.rewards` — boss killer's bonus reward.
 
-Meteor blocks and reward pumpkins are tracked while the server is running. The meteor does not create an explosion. Test new plugin versions on a backup/test server before deploying to a live server.
+Repeat a material in a reward list to make it more likely. Event tracking for falling meteor blocks and special pumpkins is in-memory; restart clears that tracking. Test new versions on a backup server before live deployment.
