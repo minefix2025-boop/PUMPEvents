@@ -138,6 +138,54 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
                 spawnBoss(target);
                 return true;
             }
+            case "bloodmoon" -> {
+                startBloodMoon();
+                return true;
+            }
+            case "pumpquake" -> {
+                startPumpQuake();
+                return true;
+            }
+            case "lightningstorm" -> {
+                startLightningStorm();
+                return true;
+            }
+            case "supplydrop" -> {
+                Location target;
+                if (args.length == 0 && sender instanceof Player player) {
+                    target = player.getLocation();
+                } else if (args.length == 0 && !Bukkit.getWorlds().isEmpty()) {
+                    target = Bukkit.getWorlds().get(0).getSpawnLocation();
+                } else {
+                    target = parseTarget(sender, args);
+                }
+                if (target == null) {
+                    sender.sendMessage(color("&cUsage: /supplydrop [@s] or /supplydrop <x> <y> <z>"));
+                    return true;
+                }
+                createSupplyDrop(target);
+                return true;
+            }
+            case "pumprain" -> {
+                spawnPumpkinRain(sender);
+                return true;
+            }
+            case "mobraid" -> {
+                Location target;
+                if (args.length == 0 && sender instanceof Player player) {
+                    target = player.getLocation();
+                } else if (args.length == 0 && !Bukkit.getWorlds().isEmpty()) {
+                    target = Bukkit.getWorlds().get(0).getSpawnLocation();
+                } else {
+                    target = parseTarget(sender, args);
+                }
+                if (target == null) {
+                    sender.sendMessage(color("&cUsage: /mobraid [@s] or /mobraid <x> <y> <z>"));
+                    return true;
+                }
+                startMobRaid(target);
+                return true;
+            }
             default -> {
                 return false;
             }
