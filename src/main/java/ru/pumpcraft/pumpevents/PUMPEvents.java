@@ -376,6 +376,154 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
         player.sendMessage(color("&6+1 Hunt Pumpkin &8| &eTotal: " + pumpkinScores.get(player.getUniqueId())));
     }
 
+
+    private void startBloodMoon() {
+        Bukkit.broadcastMessage(color("&4&lBLOOD MOON &cThe night belongs to the monsters!"));
+        for (World world : Bukkit.getWorlds()) {
+            world.setTime(18000L);
+            world.setStorm(true);
+            world.playSound(world.getSpawnLocation(), Sound.ENTITY_WITHER_AMBIENT, 1.5f, 0.7f);
+        }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.getWorld().spawnParticle(Particle.DUST, player.getLocation().add(0, 2, 0), 50,
+                    1.5, 1.0, 1.5, new Particle.DustOptions(org.bukkit.Color.fromRGB(180, 0, 0), 1.8f));
+            spawnHostilesNear(player.getLocation(), 3);
+        }
+    }
+
+    private void startPumpQuake() {
+        Bukkit.broadcastMessage(color("&6&lPUMP QUAKE &eThe ground is shaking!"));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Location at = player.getLocation();
+            player.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 0.6f);
+            player.getWorld().spawnParticle(Particle.BLOCK, at, 80, 3, 0.2, 3, 0.15, Material.DIRT.createBlockData());
+            player.getWorld().spawnParticle(Particle.CLOUD, at, 35, 2, 0.2, 2, 0.05);
+            Vector push = player.getLocation().getDirection().multiply(-0.35).setY(0.25);
+            player.setVelocity(player.getVelocity().add(push));
+            if (ThreadLocalRandom.current().nextInt(100) < 35) {
+                rewardRandom(player, "quake.rewards", java.util.List.of("COAL", "IRON_INGOT", "GOLD_INGOT", "EMERALD"), "&6Quake loot");
+            }
+        }
+    }
+
+    private void startLightningStorm() {
+        Bukkit.broadcastMessage(color("&b&lLIGHTNING STORM &fLightning is striking nearby!"));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            World world = player.getWorld();
+            for (int i = 0; i < 3; i++) {
+                int x = player.getLocation().getBlockX() + ThreadLocalRandom.current().nextInt(-8, 9);
+                int z = player.getLocation().getBlockZ() + ThreadLocalRandom.current().nextInt(-8, 9);
+                int y = world.getHighestBlockYAt(x, z) + 1;
+                if (y < world.getMaxHeight()) world.strikeLightningEffect(new Location(world, x, y, z));
+            }
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.8f, 1.0f);
+        }
+    }
+
+    private void createSupplyDrop(Location target) {
+        World world = target.getWorld();
+        if (world == null) return;
+        Location chestAt = target.getBlock().getLocation();
+        int maxY = Math.min(world.getMaxHeight() - 1, chestAt.getBlockY() + 8);
+        while (chestAt.getBlockY() < maxY && !chestAt.getBlock().isAir()) chestAt.add(0, 1, 0);
+        if (!chestAt.getBlock().isAir() || chestAt.getBlockY() <= world.getMinHeight()) {
+            Bukkit.broadcastMessage(color("&cSupply drop failed: no free block found."));
+            return;
+        }
+        chestAt.getBlock().setType(Material.CHEST, false);
+        org.bukkit.block.BlockState state = chestAt.getBlock().getState();
+        if (!(state instanceof org.bukkit.block.Chest chest)) return;
+        org.bukkit.inventory.Inventory inventory = chest.getBlockInventory();
+        java.util.List<Material> pool = new java.util.ArrayList<>(java.util.List.of(
+                Material.EMERALD, Material.IRON_INGOT, Material.GOLD_INGOT, Material.DIAMOND,
+                Material.GOLDEN_CARROT, Material.EXPERIENCE_BOTTLE, Material.GOLDEN_APPLE, Material.ARROW));
+        int entries = ThreadLocalRandom.current().nextInt(4, 8);
+        for (int i = 0; i < entries; i++) {
+            Material material = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+            int amount = (material == Material.DIAMOND || material == Material.GOLDEN_APPLE) ? 1
+                    : ThreadLocalRandom.current().nextInt(2, 7);
+            inventory.setItem(ThreadLocalRandom.current().nextInt(inventory.getSize()), new ItemStack(material, amount));
+        }
+        chest.update(true, false);
+        world.spawnParticle(Particle.HAPPY_VILLAGER, chestAt.clone().add(0.5, 1, 0.5), 35, 0.5, 0.7, 0.5, 0.05);
+        world.playSound(chestAt, Sound.BLOCK_CHEST_OPEN, 1.0f, 0.8f);
+        Bukkit.broadcastMessage(color("&e&lSUPPLY DROP! &fA loot chest appeared at &b"
+                + chestAt.getBlockX() + " " + chestAt.getBlockY() + " " + chestAt.getBlockZ()));
+    }
+
+    private void spawnPumpkinRain(CommandSender sender) {
+        if (Bukkit.getOnlinePlayers().isEmpty()) {
+            sender.sendMessage(color("&cNo players are online."));
+            return;
+        }
+        Bukkit.broadcastMessage(color("&6&lPUMPKIN RAIN! &eCollect glowing pumpkins for random loot!"));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            World world = player.getWorld();
+            for (int i = 0; i < 6; i++) {
+                Location at = player.getLocation().clone().add(
+                        ThreadLocalRandom.current().nextDouble(-5, 6), 1.5,
+                        ThreadLocalRandom.current().nextDouble(-5, 6));
+                ItemStack stack = new ItemStack(Material.CARVED_PUMPKIN);
+                ItemMeta meta = stack.getItemMeta();
+                if (meta == null) continue;
+                meta.setDisplayName(color("&6&lPUMPKIN RAIN"));
+                meta.setLore(java.util.List.of(color("&ePick up for a random reward!")));
+                meta.getPersistentDataContainer().set(bonusPumpkinKey, PersistentDataType.BYTE, (byte) 1);
+                stack.setItemMeta(meta);
+                Item item = world.dropItem(at, stack);
+                item.setGlowing(true);
+                item.setUnlimitedLifetime(true);
+                item.setVelocity(new Vector(0, 0, 0));
+            }
+        }
+    }
+
+    private void startMobRaid(Location target) {
+        World world = target.getWorld();
+        if (world == null) return;
+        Bukkit.broadcastMessage(color("&4&lMOB RAID! &cA hostile wave has arrived!"));
+        for (int i = 0; i < 8; i++) {
+            Location spawn = target.clone().add(ThreadLocalRandom.current().nextDouble(-5, 6), 0,
+                    ThreadLocalRandom.current().nextDouble(-5, 6));
+            spawn.setY(world.getHighestBlockYAt(spawn) + 1);
+            if (!spawn.getBlock().isPassable() || !spawn.clone().add(0, 1, 0).getBlock().isPassable()) continue;
+            org.bukkit.entity.EntityType type = i % 3 == 0
+                    ? org.bukkit.entity.EntityType.SKELETON : org.bukkit.entity.EntityType.ZOMBIE;
+            Entity mob = world.spawnEntity(spawn, type);
+            mob.setCustomName(color("&cPUMP RAID"));
+            mob.setCustomNameVisible(true);
+        }
+        world.playSound(target, Sound.ENTITY_ZOMBIE_AMBIENT, 2.0f, 0.7f);
+    }
+
+    private void spawnHostilesNear(Location center, int amount) {
+        World world = center.getWorld();
+        if (world == null) return;
+        for (int i = 0; i < amount; i++) {
+            Location spawn = center.clone().add(ThreadLocalRandom.current().nextDouble(-5, 6), 0,
+                    ThreadLocalRandom.current().nextDouble(-5, 6));
+            spawn.setY(world.getHighestBlockYAt(spawn) + 1);
+            if (spawn.getBlock().isPassable() && spawn.clone().add(0, 1, 0).getBlock().isPassable()) {
+                world.spawnEntity(spawn, i == 0 ? org.bukkit.entity.EntityType.SKELETON : org.bukkit.entity.EntityType.ZOMBIE);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBonusPumpkinPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        Item item = event.getItem();
+        ItemMeta meta = item.getItemStack().getItemMeta();
+        if (meta == null || !meta.getPersistentDataContainer().has(bonusPumpkinKey, PersistentDataType.BYTE)) return;
+        event.setCancelled(true);
+        item.remove();
+        rewardRandom(player, "pumpkin-rain.rewards", java.util.List.of(
+                "EMERALD", "GOLD_INGOT", "GOLDEN_CARROT", "DIAMOND", "EXPERIENCE_BOTTLE", "GOLDEN_APPLE"),
+                "&6Pumpkin rain");
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+        player.spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1, 0), 16, 0.5, 0.5, 0.5, 0.02);
+    }
+
     private void startMidnight() {
         Bukkit.broadcastMessage(color("&5&l☾ MIDNIGHT PUMPKIN ☽ &dThe world is falling into darkness!"));
         for (World world : Bukkit.getWorlds()) {
