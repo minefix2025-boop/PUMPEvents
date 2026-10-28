@@ -1,8 +1,6 @@
-# PUMPEvents 1.2.0 configuration
+# PUMPEvents 1.3.0 configuration
 meteor:
-  # Number of falling magma blocks (clamped between 1 and 12).
   falling-block-count: 5
-  # Random reward pool for breaking a landed meteor block. Repeated entries are more common.
   rewards:
     - DIAMOND
     - EMERALD
@@ -13,9 +11,7 @@ meteor:
     - EXPERIENCE_BOTTLE
     - GOLDEN_APPLE
 pumpkin:
-  # If false, pumpkincreate will not replace non-air blocks.
   replace-blocks: false
-  # Random loot pool for breaking a pumpkin created by /pumpkincreate.
   rewards:
     - EMERALD
     - EMERALD
@@ -25,12 +21,9 @@ pumpkin:
     - GOLDEN_APPLE
     - DIAMOND
 pumpkin-hunt:
-  # Event duration is clamped between 30 and 600 seconds.
   duration-seconds: 120
-  # Used only if random-rewards is false.
   emeralds-per-pumpkin: 2
   random-rewards: true
-  # Random loot pool for each collected hunt pumpkin. Repeated entries are more common.
   rewards:
     - EMERALD
     - EMERALD
@@ -40,6 +33,20 @@ pumpkin-hunt:
     - GOLDEN_CARROT
     - EXPERIENCE_BOTTLE
     - DIAMOND
+pumpkin-rain:
+  rewards:
+    - EMERALD
+    - GOLD_INGOT
+    - GOLDEN_CARROT
+    - DIAMOND
+    - EXPERIENCE_BOTTLE
+    - GOLDEN_APPLE
+quake:
+  rewards:
+    - COAL
+    - IRON_INGOT
+    - GOLD_INGOT
+    - EMERALD
 midnight:
   duration-seconds: 20
   spawn-mobs: true
@@ -49,7 +56,6 @@ boss:
   damage: 18.0
   movement-speed: 0.32
   reward-message: "&aThe PUMP World Boss has been defeated!"
-  # Killer receives one random bonus reward, in addition to gold and diamonds.
   rewards:
     - DIAMOND
     - DIAMOND
