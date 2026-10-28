@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ru.pumpcraft</groupId>
   <artifactId>pumpevents</artifactId>
-  <version>1.2.0</version>
+  <version>1.3.0</version>
   <name>PUMPEvents</name>
   <description>World events for PUMPCraft</description>
   <properties>
@@ -26,7 +26,7 @@
     </dependency>
   </dependencies>
   <build>
-    <finalName>PUMPEvents-1.2.0</finalName>
+    <finalName>PUMPEvents-1.3.0</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
