@@ -40,6 +40,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public final class PUMPEvents extends JavaPlugin implements Listener {
     private NamespacedKey huntKey;
+    private NamespacedKey bonusPumpkinKey;
     private final Map<UUID, Integer> pumpkinScores = new HashMap<>();
     private final Set<String> meteorBlocks = new HashSet<>();
     private final Set<String> rewardPumpkins = new HashSet<>();
@@ -50,6 +51,7 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         huntKey = new NamespacedKey(this, "hunt_pumpkin");
+        bonusPumpkinKey = new NamespacedKey(this, "bonus_pumpkin");
         Bukkit.getPluginManager().registerEvents(this, this);
         getLogger().info("PUMPEvents enabled!");
     }
@@ -425,8 +427,8 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
         if (world == null) return;
         Location chestAt = target.getBlock().getLocation();
         int maxY = Math.min(world.getMaxHeight() - 1, chestAt.getBlockY() + 8);
-        while (chestAt.getBlockY() < maxY && !chestAt.getBlock().isAir()) chestAt.add(0, 1, 0);
-        if (!chestAt.getBlock().isAir() || chestAt.getBlockY() <= world.getMinHeight()) {
+        while (chestAt.getBlockY() < maxY && !chestAt.getBlock().getType().isAir()) chestAt.add(0, 1, 0);
+        if (!chestAt.getBlock().getType().isAir() || chestAt.getBlockY() <= world.getMinHeight()) {
             Bukkit.broadcastMessage(color("&cSupply drop failed: no free block found."));
             return;
         }
