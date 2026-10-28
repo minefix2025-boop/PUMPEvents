@@ -73,6 +73,12 @@ public final class PUMPEvents extends JavaPlugin implements Listener {
                 sender.sendMessage(color("&6/pumpkinhunt start|stop &7- collectible pumpkin event"));
                 sender.sendMessage(color("&6/midnightpump &7- midnight event"));
                 sender.sendMessage(color("&6/boss [@s|x y z] &7- summon the world boss"));
+                sender.sendMessage(color("&c/bloodmoon &7- hostile Blood Moon event"));
+                sender.sendMessage(color("&6/pumpquake &7- earthquake and loot"));
+                sender.sendMessage(color("&b/lightningstorm &7- harmless visual lightning"));
+                sender.sendMessage(color("&e/supplydrop [@s|x y z] &7- randomized loot chest"));
+                sender.sendMessage(color("&6/pumprain &7- collectible reward pumpkins"));
+                sender.sendMessage(color("&4/mobraid [@s|x y z] &7- hostile mob wave"));
                 sender.sendMessage(color("&7Pumpkin hunt: " + (pumpkinHuntTask == null ? "&cOFF" : "&aON (" + pumpkinHuntSecondsLeft + "s)")));
                 return true;
             }
